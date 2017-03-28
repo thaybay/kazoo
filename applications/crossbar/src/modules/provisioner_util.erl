@@ -204,7 +204,7 @@ do_full_provisioner_provider(Context) ->
 do_full_provision_contact_list(AccountId) when is_binary(AccountId) ->
     case kz_account:fetch(AccountId) of
         {'ok', JObj} ->
-            Routines = [fun kz_json:public_fields/1
+            Routines = [fun kz_doc:public_fields/1
                        ,fun(J) ->
                                 ResellerId = kz_services:find_reseller_id(AccountId),
                                 kz_json:set_value(<<"provider_id">>, ResellerId, J)
@@ -485,7 +485,7 @@ merge_device(MACAddress, Context) ->
                ,fun(J) -> kz_json:set_value(<<"account_id">>, AccountId, J) end
                ],
     MergedDevice = lists:foldl(fun(F, J) -> F(J) end, JObj, Routines),
-    {'ok', kz_json:public_fields(MergedDevice)}.
+    {'ok', kz_doc:public_fields(MergedDevice)}.
 
 -spec get_owner(api_binary(), ne_binary()) -> kz_json:object().
 get_owner('undefined', _) -> kz_json:new();

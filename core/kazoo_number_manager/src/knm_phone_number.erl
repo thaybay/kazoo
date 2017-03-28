@@ -59,7 +59,7 @@
 -endif.
 
 -include("knm.hrl").
--include_lib("kazoo_json/include/kazoo_json.hrl").
+-include_lib("kazoo_stdlib/include/kazoo_json.hrl").
 
 %% Used by from_json/1
 -define(DEFAULT_FEATURES, kz_json:new()).
@@ -555,7 +555,7 @@ authorize_release(PN) ->
 -spec authorized_release(knm_phone_number()) -> knm_phone_number().
 authorized_release(PN) ->
     Routines = [{fun set_features/2, ?DEFAULT_FEATURES}
-               ,{fun set_doc/2, kz_json:private_fields(doc(PN))}
+               ,{fun set_doc/2, kz_doc:private_fields(doc(PN))}
                ,{fun set_assigned_to/2, undefined}
                ,{fun set_state/2, knm_config:released_state()}
                ],
@@ -597,7 +597,7 @@ to_public_json(PN) ->
                ,UsedBy
                ,Features
                ]),
-    Root = kz_json:set_values(Values, kz_json:public_fields(JObj)),
+    Root = kz_json:set_values(Values, kz_doc:public_fields(JObj)),
     kz_json:set_value(<<"_read_only">>, ReadOnly, Root).
 
 %%--------------------------------------------------------------------
@@ -1449,7 +1449,7 @@ set_doc(PN, JObj0) ->
 -spec update_doc(knm_phone_number(), kz_json:object()) -> knm_phone_number().
 update_doc(PN=#knm_phone_number{doc = Doc}, JObj0) ->
     true = kz_json:is_json_object(JObj0),
-    JObj1 = kz_json:merge_recursive(kz_json:public_fields(JObj0), Doc),
+    JObj1 = kz_json:merge_recursive(kz_doc:public_fields(JObj0), Doc),
     JObj = doc_from_public_fields(JObj1),
     case kz_json:are_equal(JObj, PN#knm_phone_number.doc) of
         true -> PN;
@@ -1459,7 +1459,7 @@ update_doc(PN=#knm_phone_number{doc = Doc}, JObj0) ->
 -spec reset_doc(knm_phone_number(), kz_json:object()) -> knm_phone_number().
 reset_doc(PN=#knm_phone_number{doc = Doc}, JObj0) ->
     true = kz_json:is_json_object(JObj0),
-    JObj1 = kz_json:merge_recursive(kz_json:public_fields(JObj0), kz_json:private_fields(Doc)),
+    JObj1 = kz_json:merge_recursive(kz_doc:public_fields(JObj0), kz_doc:private_fields(Doc)),
     JObj = doc_from_public_fields(JObj1),
     case kz_json:are_equal(JObj, PN#knm_phone_number.doc) of
         true -> PN;
@@ -1591,7 +1591,7 @@ sanitize_public_fields(JObj) ->
     Keys = [<<"id">>
            ,<<"used_by">>
            ],
-    kz_json:delete_keys(Keys, kz_json:public_fields(JObj)).
+    kz_json:delete_keys(Keys, kz_doc:public_fields(JObj)).
 
 %%--------------------------------------------------------------------
 %% @private
