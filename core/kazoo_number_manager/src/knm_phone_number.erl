@@ -1559,12 +1559,14 @@ sanitize_public_fields(JObj) ->
     kz_json:delete_keys(Keys, kz_json:public_fields(JObj)).
 
 %%--------------------------------------------------------------------
-%% @private
+%% @public
 %% @doc
 %% @end
 %%--------------------------------------------------------------------
--spec is_authorized(knm_phone_number()) -> boolean().
+-spec is_authorized(knm_numbers:collection()) -> knm_numbers:collection();
+                   (knm_phone_number()) -> boolean().
 -ifdef(TEST).
+is_authorized(T) when is_map(T) -> is_authorized_collection(T);
 is_authorized(#knm_phone_number{auth_by = ?KNM_DEFAULT_AUTH_BY}) -> 'true';
 is_authorized(#knm_phone_number{auth_by = 'undefined'}) -> 'false';
 is_authorized(#knm_phone_number{assigned_to = 'undefined'
@@ -1577,6 +1579,7 @@ is_authorized(#knm_phone_number{assigned_to = AssignedTo
                                }) ->
     is_in_account_hierarchy(AuthBy, AssignedTo).
 -else.
+is_authorized(T) when is_map(T) -> is_authorized_collection(T);
 is_authorized(#knm_phone_number{auth_by = ?KNM_DEFAULT_AUTH_BY}) ->
     lager:info("bypassing auth"),
     'true';
@@ -1613,6 +1616,18 @@ is_in_account_hierarchy(AuthBy, AccountId) ->
     ?LOG_DEBUG("is authz ~s ~s", [AuthBy, AccountId]),
     kz_util:is_in_account_hierarchy(AuthBy, AccountId, 'true').
 -endif.
+
+is_authorized_collection(T0=#{todo := PNs}) ->
+    F = fun (PN, T) ->
+                case is_authorized(PN) of
+                    true -> knm_numbers:ok(PN, T);
+                    false ->
+                        {error,A} = (catch knm_errors:unauthorized()),
+                        Reason = knm_errors:to_json(A),
+                        knm_numbers:ko(number(PN), Reason, T)
+                end
+        end,
+    lists:foldl(F, T0, PNs).
 
 %%--------------------------------------------------------------------
 %% @private
